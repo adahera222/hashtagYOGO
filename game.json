@@ -1,0 +1,12 @@
+{
+	"state1": {
+		"kittens":"state2",
+		"cats":"state2",
+		"fish":"state3"
+	},
+	"state2": {
+		"kittens":"state3",
+		"cats":"state3",
+		"fish":"state1"
+	}
+}
