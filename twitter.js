@@ -1,5 +1,6 @@
 var game = require("./game.json");
 var responses = require("./responses");
+var verifyCookies = require("./verifycookies.js");
 
 //--API keys setup for Twitter and MongoHQ----------------
 
@@ -21,7 +22,8 @@ var tweeter = new twitter({
 	access_token_secret: keys.access_token_secret
 });
 
-
+// HTTP request, to validate cookie recipes
+var request = require('request');
 
 // A couple of ways to do this:
 // - check which tweet a user is responding to:
@@ -57,41 +59,40 @@ function gameplay(user, username, message, in_response_to) {
 				currentstate = "start";
 			}
 
-			var newstate = findNextState(currentstate, message);
-
-			// give a confusion message if the state hasn't changed
-			if(newstate == currentstate) {
-				tweet(user, username, "needs_clarification", in_response_to);
-				db.close();
-			}
-			
-			//or give a state change message and change the user's state in the DB
-			else {
-				tweet(user, username, newstate, in_response_to);
-
-				//then update the user document and close the db
-				if (currentstate == "start") {
-					var newuser = {"user":user, "state":[currentstate, newstate]};
-					db.collection("users").insert(newuser, {"w":1}, function(err, object){
-						if(err) console.log(err);
-						else {
-							console.log("Added user "+user+", who moved to state "+state+".");
-							db.close();
-						}
-					});
+			findNextState(currentstate, message, function(newstate) {
+				// give a confusion message if the state hasn't changed
+				if(newstate == currentstate) {
+					tweet(user, username, "needs_clarification", in_response_to);
+					db.close();
 				}
-
+				
+				//or give a state change message and change the user's state in the DB
 				else {
-					db.collection("users").update({"user": user}, {$push: { "state": newstate } }, {"w":1}, function(err, object) {
-						if (err) console.log(err);
-						else {
-							console.log("Changed user "+user+" to state "+state+".");
-							db.close();
-						}
-					});
+					tweet(user, username, newstate, in_response_to);
+
+					//then update the user document and close the db
+					if (currentstate == "start") {
+						var newuser = {"user":user, "state":[currentstate, newstate]};
+						db.collection("users").insert(newuser, {"w":1}, function(err, object){
+							if(err) console.log(err);
+							else {
+								console.log("Added user "+user+", who moved to state "+state+".");
+								db.close();
+							}
+						});
+					}
+
+					else {
+						db.collection("users").update({"user": user}, {$push: { "state": newstate } }, {"w":1}, function(err, object) {
+							if (err) console.log(err);
+							else {
+								console.log("Changed user "+user+" to state "+state+".");
+								db.close();
+							}
+						});
+					}
 				}
-			}
-	
+			});
 		});
 	});
 }
@@ -99,8 +100,13 @@ function gameplay(user, username, message, in_response_to) {
 
 
 function cleanText(text) {
-	var cleanedText = text.toLowerCase().replace(/['\[\]]/g,"").replace(screen_name,"")
+	var cleanedText = text.toLowerCase().replace("@"+screen_name,"")
 	return cleanedText;
+}
+function getURL(text) {
+	var re = /\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[A-Z0-9+&@#\/%=~_|]/i;
+	var URL = text.match(re)[0];
+	return URL;
 }
 
 function choose(choices) {
@@ -108,16 +114,29 @@ function choose(choices) {
   return choices[index];
 }
 
-function findNextState(currentstate, text) {
+function findNextState(currentstate, text, callback) {
 	var nextstate = currentstate;
 
-	text = cleanText(text);
-	for (phrase in game[currentstate]) {
-		if (text.search(phrase)>=0) {
-			nextstate = game[currentstate][phrase];
+	if (currentstate == "need_cookies") {
+		url = getURL(text);
+		verifyCookies(url, callback);
+	}
+
+	else {
+		text = cleanText(text);
+		currentoptions = game[currentstate];
+
+		for (phrase in currentoptions) {
+			if (text.search(phrase)>=0) {
+				nextstate = game[currentstate][phrase];
+			}
+		}
+
+		if (callback && typeof callback === "function") {
+			// Execute the callback function and pass the parameters to it
+			callback(nextstate);
 		}
 	}
-	return nextstate;
 }
 
 function tweet(user, username, newstate, in_response_to) {
@@ -154,5 +173,12 @@ function openUserStream(tweeter){
 
 // ------------------------Make it go!--------------------------------------------------------
 console.log("Starting up...");
+
+// tweet(null, "gnurr", "test", '');
+
+// tweeter.getUserTimeline({"screen_name":"hashtagyogo", "count":1}, function(err, data) {
+// 	// console.log(pluckAll(data,["text", "favorite_count"]));
+// 	console.log(data);
+// });
 
 openUserStream(tweeter);
