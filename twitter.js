@@ -21,18 +21,34 @@ var tweeter = new twitter({
 });
 
 
-function getState(user) {
-	mongo.Db.connect(mongoUri, function (err, db, user) {
+
+// A couple of ways to do this:
+// - check which tweet a user is responding to:
+		// if(data.in_reply_to_status_id_str == game_root_status_id_str) {
+		// 	newPlayer();
+		// }
+// 		- this allows them to branch the story (maybe only until they reach an ending?)
+// - store user state completely in database, don't worry about what they're responding to
+// Hard to tell which one is more intuitive?
+
+
+function gameplay(user, message, in_response_to) {
+	console.log(user+" said: "+message);
+	mongo.Db.connect(mongoUri, function (err, db) {
 		if (err) {
 			console.log(err);
 		}
-
-		db.collection("users").find({"user":user}).toArray(function (err, docs, user) {
+		console.log("connecting; user is "+user);
+		// Get the current state of the user
+		db.collection("users").find({"user":user}).toArray(function (err, docs) {
 			var currentstate;
 			if (docs.length==0) {
 				//add user as new to db, with state="start"
 				currentstate = "start";
-				newuser = {"user":user, "state":[currentstate]};
+				var newuser = {"user":user, "state":[currentstate]};
+				db.collection("users").insert(newuser, {"w":1}, function(err, object){
+					//if(err) console.log(err);
+				});
 
 			}
 			else if (docs.length==1) {
@@ -46,6 +62,13 @@ function getState(user) {
 
 
 
+			//then tell the world
+			tweet(user, newstate, in_response_to);
+			db.collection("users").update({"user": user}, {"safe":true}, {$push: { "state": state } }, {}, function(err, object) {
+				if (err) console.warn(err.message);
+				else console.log("Changed user "+user+" to state "+state+".");
+			});
+
 			db.close();
 		});
 	});
@@ -53,69 +76,32 @@ function getState(user) {
 
 
 
-function setState(user, state) {
-	mongo.Db.connect(mongoUri, function (err, db, collectionname) {
-		if (err) {
-			console.log(err);
-		}
-		else {
-			db.collection("users").findAndModify({"user": user}, [], {$set: { "state": state } }, {}, function(err, object) {
-				if (err) console.warn(err.message);
-				else console.log("Changed user "+user+" to state "+state+".");
-			});
-		}
-	});
+function cleanText(text) {
+	var cleanedText = text.toLowerCase().replace(/['\[\]]/g,"")
+	return cleanedText;
 }
 
-
-function tweet(user, response, in_response_to) {
-	response = "@"+user+" "+response;
-	tweeter.updateStatus(text, {"in_reply_to_status_id_str":in_response_to}, function() {
-		console.log("I said: "+response);
-	})
-}
-
-function updateState(user, newstate, in_response_to) {
-	setState(user, newstate);
-	
-	//tweet new status
-	response = responses[newstate];
-	//remember to include response for ""
-	tweet(user, response, in_response_to);
-}
-
-
-// A couple of ways to do this:
-// - check which tweet a user is responding to:
-		// if(data.in_reply_to_status_id_str == game_root_status_id_str) {
-		// 	newPlayer();
-		// }
-// 		- this allows them to branch the story (maybe only until they reach an ending?)
-// - store user state completely in database, don't worry about what they're responding to
-// Hard to tell which one is more intuitive?
-
-
-
-function gameplay(user, text, message_id) {
-	console.log(user+" said: "+text);
-
-	//sanitize move input: remove names, etc
-	cleanText(text);
-
-	//get user's current state from database
-	var currentstate = getState(user);
-
-	//match input against possible moves from user's current state
+function findNextState(currentstate, text) {
 	var nextstate = "";
 
+	text = cleanText(text);
 	for (phrase in game[currentstate]) {
 		if (text.search(phrase)>=0) {
 			nextstate = game[currentstate][phrase];
 		}
 	}
-	//update user's state
-	updateState(user, nextstate, message_id);
+	return nextstate;
 }
+
+
+
+function tweet(user, newstate, in_response_to) {
+	response = "@"+user+" "+responses[newstate];
+	tweeter.updateStatus(text, {"in_reply_to_status_id_str":in_response_to}, function() {
+		console.log("I said: "+response);
+	})
+}
+
 
 
 
@@ -126,8 +112,8 @@ function openUserStream(tweeter){
 			if (data.user && data.user.id_str != my_user_id) {
 				user = data.user.id_str;
 				message_id = data.id_str;
-				text = data.text;
-				gameplay(user, text, message_id);
+				message = data.text;
+				gameplay(user, message, message_id);
 			}
 			else { //actually this is messy, because it does this for all other events too	
 			}
@@ -143,7 +129,7 @@ console.log("Starting up...");
 // 	console.log(err);
 //     console.log(data);
 // });
-getState("lea");
-getState("Timmy");
+//getState("lea");
+getState("max");
 
 // openUserStream(tweeter);
