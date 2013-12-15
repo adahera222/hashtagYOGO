@@ -1,4 +1,9 @@
 {
+	"start": {
+		"kittens":"state1",
+		"cats":"state2",
+		"fish":"state3"
+	},
 	"state1": {
 		"kittens":"state2",
 		"cats":"state2",
@@ -7,6 +12,11 @@
 	"state2": {
 		"kittens":"state3",
 		"cats":"state3",
+		"fish":"state1"
+	},
+	"state3": {
+		"kittens":"state1",
+		"cats":"state1",
 		"fish":"state1"
 	}
 }
