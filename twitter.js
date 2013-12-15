@@ -7,7 +7,7 @@ var mongoUri = keys.mongoURL;
 
 var util = require("util");
 var twitter = require('ntwitter'); //https://github.com/AvianFlu/ntwitter
-var username = keys.id_str;
+var my_username = keys.id_str;
 var game_root_status_id_str = keys.game_root_status_id_str;
 
 var tweeter = new twitter({
@@ -81,20 +81,36 @@ function condenseTweet(tweet) {
 		}
 }
 
-function newPlayer() {
-	console.log("new player!");
+function gameplay(user, move) {
+	console.log(user+" said "+move);
+
+	//sanitize move input: remove names, etc
+
+	//get user's current state from database
+	//match input against possible moves from user's current state
+	//update user's state
+	//tweet new status
 }
 
+// if(data.in_reply_to_status_id_str == game_root_status_id_str) {
+// 	newPlayer();
+// }
 
 function openUserStream(tweeter){
 	tweeter.stream('user', {}, function(stream){
 		console.log("Making my stream.");
 		stream.on('data', function (data){
-			if(data.in_reply_to_status_id_str == game_root_status_id_str) {
-				newPlayer();
+			if (data.user && data.user.id_str != my_username) {
+				user = data.user.id_str;
+				move = data.text;
+				gameplay(user, move);
 			}
-			console.log(data);
-			console.log("-------------------------------------------------------------------------------------------------------");
+			else { //actually this is messy, because it does this for all other events too
+				user = data.in_reply_to_screen_name;
+				response = data.text;
+				console.log("I told "+user+": "+response);
+			}
+			console.log("--------------------------------------");
 		});
 	});
 }
@@ -102,15 +118,9 @@ function openUserStream(tweeter){
 // ------------------------Make it go!--------------------------------------------------------
 console.log("Starting up...");
 
-// tweeter.getUserTimeline({"screen_name":"hashtagyogo", "count":3, "include_rts":1, "exclude_replies":false,}, function(err, data) {
+// tweeter.get('/statuses/user_timeline.json', {"screen_name":"hashtagyogo", "count":3, "include_rts":1, "exclude_replies":false,}, function(err, data) {
 // 	console.log(err);
 //     console.log(data);
 // });
 
-
-tweeter.get('/statuses/user_timeline.json', {"screen_name":"hashtagyogo", "count":3, "include_rts":1, "exclude_replies":false,}, function(err, data) {
-	console.log(err);
-    console.log(data);
-});
-
-// openUserStream(tweeter);
+openUserStream(tweeter);
