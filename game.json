@@ -1,22 +1,88 @@
 {
 	"start": {
-		"kittens":"state1",
-		"cats":"state2",
-		"fish":"state3"
+		"mirror":"mirrors",
+		"acrobat":"acrobatics"
 	},
-	"state1": {
-		"kittens":"state2",
-		"cats":"state2",
-		"fish":"state3"
+	"mirrors":{
+		"art":"art",
+		"artifact":"artifact"
 	},
-	"state2": {
-		"kittens":"state3",
-		"cats":"state3",
-		"fish":"state1"
+	"acrobatics":{
+		"art":"art",
+		"artifact":"artifact"
 	},
-	"state3": {
-		"kittens":"state1",
-		"cats":"state1",
-		"fish":"state1"
+	"artifact":{
+		"statue":"statue",
+		"crown":"crown",
+		"both":"front_door",
+		"front":"front_door",
+		"door":"front_door"
+	},
+	"front_door":{
+		"luck":"luck",
+		"need":"luck"
+	},
+	"luck":{
+		"act":"act_casual",
+		"casual":"act_casual",
+		"run":"run"
+	},
+	"cookie_success":{
+		"":"fence"
+	},
+	"run":{
+		"":"bail"
+	},
+	"crown":{
+		"yes":"subway",
+		"no":"no_subway",
+		"ye":"subway",
+		"na":"no_subway",
+		"sure":"subway",
+		"nope":"no_subway"
+	},
+	"statue":{
+		"yes":"subway",
+		"no":"no_subway",
+		"ye":"subway",
+		"na":"no_subway",
+		"sure":"subway",
+		"nope":"no_subway"
+	},
+	"subway":{
+		"":"fence"
+	},
+	"no_subway":{
+		"bike":"bike",
+		"bicycle":"bike",
+		"taxi":"taxi",
+		"cab":"taxi"
+	},
+	"bike":{
+		"":"fence"
+	},
+	"taxi":{
+		"":"fence"
+	},
+	"art":{
+		"modern":"modern",
+		"new":"modern",
+		"old":"classic",
+		"classic":"classic"
+	},
+	"modern":{
+		"yes":"subway",
+		"no":"no_subway",
+		"ye":"subway",
+		"na":"no_subway",
+		"sure":"subway",
+		"nope":"no_subway"
+	},
+	"classic":{
+		"back":"modern",
+		"small":"modern",
+		"through":"front_door",
+		"front":"front_door",
+		"door":"front_door"
 	}
 }

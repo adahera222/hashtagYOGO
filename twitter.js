@@ -58,41 +58,42 @@ function gameplay(user, username, message, in_response_to) {
 				console.log("Username conflict?");
 				currentstate = "start";
 			}
-
-			findNextState(currentstate, message, function(newstate) {
-				// give a confusion message if the state hasn't changed
-				if(newstate == currentstate) {
-					tweet(user, username, "needs_clarification", in_response_to);
-					db.close();
-				}
-				
-				//or give a state change message and change the user's state in the DB
-				else {
-					tweet(user, username, newstate, in_response_to);
-
-					//then update the user document and close the db
-					if (currentstate == "start") {
-						var newuser = {"user":user, "state":[currentstate, newstate]};
-						db.collection("users").insert(newuser, {"w":1}, function(err, object){
-							if(err) console.log(err);
-							else {
-								console.log("Added user "+user+", who moved to state "+state+".");
-								db.close();
-							}
-						});
+			if(currentstate != "fence" && currentstate != "bail"){
+				findNextState(currentstate, message, function(newstate) {
+					// give a confusion message if the state hasn't changed
+					if(newstate == currentstate) {
+						tweet(user, username, "needs_clarification", in_response_to);
+						db.close();
 					}
-
+					
+					//or give a state change message and change the user's state in the DB
 					else {
-						db.collection("users").update({"user": user}, {$push: { "state": newstate } }, {"w":1}, function(err, object) {
-							if (err) console.log(err);
-							else {
-								console.log("Changed user "+user+" to state "+state+".");
-								db.close();
-							}
-						});
+						tweet(user, username, newstate, in_response_to);
+
+						//then update the user document and close the db
+						if (currentstate == "start") {
+							var newuser = {"user":user, "state":[currentstate, newstate]};
+							db.collection("users").insert(newuser, {"w":1}, function(err, object){
+								if(err) console.log(err);
+								else {
+									console.log("Added user "+user+", who moved to state "+state+".");
+									db.close();
+								}
+							});
+						}
+
+						else {
+							db.collection("users").update({"user": user}, {$push: { "state": newstate } }, {"w":1}, function(err, object) {
+								if (err) console.log(err);
+								else {
+									console.log("Changed user "+user+" to state "+state+".");
+									db.close();
+								}
+							});
+						}
 					}
-				}
-			});
+				});
+			}	
 		});
 	});
 }
@@ -105,7 +106,12 @@ function cleanText(text) {
 }
 function getURL(text) {
 	var re = /\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[A-Z0-9+&@#\/%=~_|]/i;
-	var URL = text.match(re)[0];
+	var URL = "";
+	var match = text.match(re);
+	if(match) {
+		URL = match[0];
+	}
+	
 	return URL;
 }
 
@@ -117,9 +123,15 @@ function choose(choices) {
 function findNextState(currentstate, text, callback) {
 	var nextstate = currentstate;
 
-	if (currentstate == "need_cookies") {
+	if (currentstate == "act_casual" || currentstate == "cookie_failure" || currentstate == "cookie_reqest_repeat") {
 		url = getURL(text);
-		verifyCookies(url, callback);
+		if(url=="") {
+			nextstate = "cookie_reqest_repeat";
+			callback(nextstate);
+		}
+		else {
+			verifyCookies(url, callback);
+		}
 	}
 
 	else {
@@ -181,4 +193,7 @@ console.log("Starting up...");
 // 	console.log(data);
 // });
 
-openUserStream(tweeter);
+findNextState("bike", "what", function(nextstate) {console.log(nextstate)});
+// findNextState("need_cookies", "http://allrecipes.com/Recipe/Linzer-Torte-Cookies/Detail.aspx?evt19=1", function(nextstate) {console.log(nextstate)});
+
+// openUserStream(tweeter);

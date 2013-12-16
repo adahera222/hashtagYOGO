@@ -15,8 +15,6 @@ function verifyCookieRecipe(url, callback) {
 			var nextstate = "";
 			if (cookieScore >= cookieWords.length/2) {
 				nextstate = "cookie_success";
-				console.log(body);
-				console.log(url, cookieScore);
 			}
 			else {
 				nextstate = "cookie_failure";
