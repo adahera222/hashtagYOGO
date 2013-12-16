@@ -76,7 +76,7 @@ function gameplay(user, username, message, in_response_to) {
 							db.collection("users").insert(newuser, {"w":1}, function(err, object){
 								if(err) console.log(err);
 								else {
-									console.log("Added user "+user+", who moved to state "+state+".");
+									console.log("Added user "+user+", who moved to state "+newstate+".");
 									db.close();
 								}
 							});
@@ -86,7 +86,7 @@ function gameplay(user, username, message, in_response_to) {
 							db.collection("users").update({"user": user}, {$push: { "state": newstate } }, {"w":1}, function(err, object) {
 								if (err) console.log(err);
 								else {
-									console.log("Changed user "+user+" to state "+state+".");
+									console.log("Changed user "+user+" to state "+newstate+".");
 									db.close();
 								}
 							});
@@ -183,9 +183,8 @@ function openUserStream(tweeter){
 	});
 }
 
-// ------------------------Make it go!--------------------------------------------------------
-console.log("Starting up...");
 
+// ------some test commands--------------------------------
 // tweet(null, "gnurr", "test", '');
 
 // tweeter.getUserTimeline({"screen_name":"hashtagyogo", "count":1}, function(err, data) {
@@ -193,7 +192,12 @@ console.log("Starting up...");
 // 	console.log(data);
 // });
 
-findNextState("bike", "what", function(nextstate) {console.log(nextstate)});
+// findNextState("bike", "what", function(nextstate) {console.log(nextstate)});
 // findNextState("need_cookies", "http://allrecipes.com/Recipe/Linzer-Torte-Cookies/Detail.aspx?evt19=1", function(nextstate) {console.log(nextstate)});
 
-// openUserStream(tweeter);
+
+
+// ------------------------Make it go!--------------------------------------------------------
+console.log("Starting up...");
+
+ openUserStream(tweeter);
